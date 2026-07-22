@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Asset Showcase</title>
+  <title>3D Multi-Model Showcase</title>
   
   <!-- Google <model-viewer> Engine -->
   <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
@@ -14,11 +14,11 @@
   <style>
     :root {
       --bg-color: #121316;
-      --card-bg: rgba(24, 26, 32, 0.85);
+      --card-bg: rgba(24, 26, 32, 0.88);
       --accent-color: #1caad9; /* Sketchfab Blue */
       --text-main: #ffffff;
       --text-muted: #a0a5b1;
-      --border-color: rgba(255, 255, 255, 0.1);
+      --border-color: rgba(255, 255, 255, 0.12);
     }
 
     * {
@@ -37,7 +37,6 @@
       color: var(--text-main);
     }
 
-    /* 3D Canvas Container */
     .viewer-container {
       width: 100vw;
       height: 100vh;
@@ -51,7 +50,7 @@
       background: radial-gradient(circle at center, #2a2d35 0%, #111215 100%);
     }
 
-    /* Top Navigation Bar */
+    /* Top Navigation Header */
     .header {
       position: absolute;
       top: 16px;
@@ -107,44 +106,50 @@
     .btn-action:hover {
       background: var(--accent-color);
       border-color: var(--accent-color);
-      transform: translateY(-2px);
     }
 
-    /* Side Metadata Panel (Sketchfab Style) */
-    .meta-panel {
+    /* Model Selector Buttons Bar (Horizontal Scrollable) */
+    .model-selector-container {
       position: absolute;
-      bottom: 80px;
+      top: 80px;
       left: 16px;
-      width: 280px;
+      right: 16px;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-color) transparent;
+    }
+
+    .model-btn {
       background: var(--card-bg);
       backdrop-filter: blur(12px);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
-      z-index: 10;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
-
-    .meta-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--accent-color);
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
-
-    .meta-item {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      margin-bottom: 8px;
       color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .meta-item span:last-child {
+    .model-btn:hover {
       color: var(--text-main);
-      font-weight: 600;
+      border-color: var(--accent-color);
+    }
+
+    .model-btn.active {
+      background: var(--accent-color);
+      color: #ffffff;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 12px rgba(28, 170, 217, 0.4);
     }
 
     /* Bottom Control Bar */
@@ -187,7 +192,7 @@
       color: var(--accent-color);
     }
 
-    /* Notification Toast */
+    /* Toast Notification */
     .toast {
       position: absolute;
       bottom: 80px;
@@ -210,7 +215,7 @@
       transform: translateY(0);
     }
 
-    /* Loading Bar */
+    /* Progress Bar */
     .progress-bar {
       position: absolute;
       top: 0;
@@ -227,17 +232,11 @@
       height: 100%;
       transition: width 0.1s ease;
     }
-
-    @media (max-width: 600px) {
-      .meta-panel { display: none; }
-      .header-info h1 { font-size: 0.95rem; }
-    }
   </style>
 </head>
 <body>
 
   <div class="viewer-container">
-    <!-- Progress Bar -->
     <div class="progress-bar">
       <div class="update-bar" id="progress"></div>
     </div>
@@ -245,18 +244,20 @@
     <!-- Header Overlay -->
     <div class="header">
       <div class="header-info">
-        <h1 id="modelTitle">WWI Jacket Model Showcase</h1>
-        <p>Interactive 3D Digital Asset</p>
+        <h1 id="modelTitle">Loading Models...</h1>
+        <p id="modelSubtitle">Interactive 3D Asset Showcase</p>
       </div>
       <button class="btn-action" id="shareBtn">
-        <span class="material-icons-round">share</span> Share Link
+        <span class="material-icons-round">share</span> Share Model Link
       </button>
     </div>
+
+    <!-- Dynamic Model Switcher Buttons -->
+    <div class="model-selector-container" id="modelSelector"></div>
 
     <!-- 3D Engine -->
     <model-viewer 
       id="3dViewer"
-      src="your-model.glb" 
       alt="3D Asset" 
       camera-controls 
       auto-rotate 
@@ -266,15 +267,6 @@
       environment-image="neutral"
       ar>
     </model-viewer>
-
-    <!-- Side Metadata Card -->
-    <div class="meta-panel">
-      <div class="meta-title">Asset Properties</div>
-      <div class="meta-item"><span>Format</span><span>GLTF / GLB</span></div>
-      <div class="meta-item"><span>Textures</span><span>PBR 4K</span></div>
-      <div class="meta-item"><span>Lighting</span><span>HDRI Studio</span></div>
-      <div class="meta-item"><span>Rendering</span><span>WebGL 2.0</span></div>
-    </div>
 
     <!-- Bottom Controls Toolbar -->
     <div class="toolbar">
@@ -292,27 +284,97 @@
       </button>
     </div>
 
-    <!-- Toast Notification -->
     <div class="toast" id="toast">Direct link copied to clipboard!</div>
   </div>
 
   <script>
     const viewer = document.querySelector('#3dViewer');
-    const rotateBtn = document.querySelector('#rotateToggle');
-    const lightBtn = document.querySelector('#lightToggle');
-    const resetCamBtn = document.querySelector('#resetCam');
-    const fullscreenBtn = document.querySelector('#fullscreenToggle');
-    const shareBtn = document.querySelector('#shareBtn');
-    const toast = document.querySelector('#toast');
+    const modelSelector = document.querySelector('#modelSelector');
+    const modelTitle = document.querySelector('#modelTitle');
     const progressBar = document.querySelector('#progress');
 
-    // Load URL parameter dynamically if passed (e.g. ?model=jacket.glb)
-    const urlParams = new URLSearchParams(window.location.search);
-    const modelParam = urlParams.get('model');
-    if (modelParam) {
-      viewer.src = modelParam;
-      document.getElementById('modelTitle').innerText = modelParam.replace('.glb', '').replace('_', ' ').toUpperCase();
+    // Default list of models in case API detection is offline/testing locally
+    const FALLBACK_MODELS = ["model1.glb", "model2.glb"]; 
+
+    // Function to format GLB filenames into clean titles
+    function formatTitle(filename) {
+      return filename
+        .replace(/\.glb$/i, '')
+        .replace(/[-_]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
     }
+
+    // Load a selected model into the 3D Viewer
+    function loadModel(filename, buttonElement) {
+      viewer.src = filename;
+      modelTitle.innerText = formatTitle(filename);
+
+      // Update URL search parameters without reloading page
+      const url = new URL(window.location);
+      url.searchParams.set('model', filename);
+      window.history.pushState({}, '', url);
+
+      // Active state styling for buttons
+      document.querySelectorAll('.model-btn').forEach(btn => btn.classList.remove('active'));
+      if (buttonElement) buttonElement.classList.add('active');
+    }
+
+    // Create buttons dynamically
+    function renderModelButtons(modelList) {
+      modelSelector.innerHTML = '';
+      if (!modelList || modelList.length === 0) return;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const requestedModel = urlParams.get('model');
+
+      modelList.forEach((filename, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'model-btn';
+        btn.innerHTML = `<span class="material-icons-round" style="font-size:16px;">view_in_ar</span> ${formatTitle(filename)}`;
+        btn.onclick = () => loadModel(filename, btn);
+        modelSelector.appendChild(btn);
+
+        // Auto-select requested model OR default to the FIRST model in folder
+        if (requestedModel === filename || (!requestedModel && index === 0)) {
+          loadModel(filename, btn);
+        }
+      });
+    }
+
+    // Auto-detect all .glb files from GitHub API
+    async function fetchRepoModels() {
+      const hostname = window.location.hostname;
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+
+      // If running live on GitHub Pages (e.g. username.github.io/repo)
+      if (hostname.includes('.github.io') && pathSegments.length > 0) {
+        const username = hostname.split('.')[0];
+        const repo = pathSegments[0];
+
+        try {
+          const res = await fetch(`https://api.github.com/repos/${username}/${repo}/contents/`);
+          if (res.ok) {
+            const files = await res.json();
+            const glbFiles = files
+              .filter(file => file.name.toLowerCase().endsWith('.glb'))
+              .map(file => file.name);
+
+            if (glbFiles.length > 0) {
+              renderModelButtons(glbFiles);
+              return;
+            }
+          }
+        } catch (e) {
+          console.warn('GitHub API fetch failed, falling back to manual list.', e);
+        }
+      }
+
+      // Fallback if local or if API limit reached
+      renderModelButtons(FALLBACK_MODELS);
+    }
+
+    // Initialize page
+    fetchRepoModels();
 
     // Progress Bar Indicator
     viewer.addEventListener('progress', (e) => {
@@ -323,28 +385,24 @@
       }
     });
 
-    // Auto Rotate Toggle
-    rotateBtn.addEventListener('click', () => {
+    // Control Buttons logic
+    document.querySelector('#rotateToggle').addEventListener('click', function() {
       viewer.autoRotate = !viewer.autoRotate;
-      rotateBtn.classList.toggle('active', viewer.autoRotate);
+      this.classList.toggle('active', viewer.autoRotate);
     });
 
-    // Light Environment Toggle
-    let highLight = false;
-    lightBtn.addEventListener('click', () => {
-      highLight = !highLight;
-      viewer.exposure = highLight ? 2.0 : 1.0;
-      lightBtn.classList.toggle('active', highLight);
+    document.querySelector('#lightToggle').addEventListener('click', function() {
+      const current = parseFloat(viewer.exposure) || 1.0;
+      viewer.exposure = current === 1.0 ? 2.0 : 1.0;
+      this.classList.toggle('active', viewer.exposure === 2.0);
     });
 
-    // Reset Camera
-    resetCamBtn.addEventListener('click', () => {
+    document.querySelector('#resetCam').addEventListener('click', () => {
       viewer.cameraOrbit = 'auto auto auto';
       viewer.cameraTarget = 'auto auto auto';
     });
 
-    // Fullscreen Toggle
-    fullscreenBtn.addEventListener('click', () => {
+    document.querySelector('#fullscreenToggle').addEventListener('click', () => {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen();
       } else {
@@ -352,9 +410,9 @@
       }
     });
 
-    // Copy Direct Link to Clipboard
-    shareBtn.addEventListener('click', () => {
+    document.querySelector('#shareBtn').addEventListener('click', () => {
       navigator.clipboard.writeText(window.location.href).then(() => {
+        const toast = document.querySelector('#toast');
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 2500);
       });
