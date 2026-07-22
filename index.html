@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Asset Showcase</title>
+  
+  <!-- Google <model-viewer> Engine -->
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <!-- Google Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-color: #121316;
+      --card-bg: rgba(24, 26, 32, 0.85);
+      --accent-color: #1caad9; /* Sketchfab Blue */
+      --text-main: #ffffff;
+      --text-muted: #a0a5b1;
+      --border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+    }
+
+    /* 3D Canvas Container */
+    .viewer-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      --poster-color: transparent;
+      background: radial-gradient(circle at center, #2a2d35 0%, #111215 100%);
+    }
+
+    /* Top Navigation Bar */
+    .header {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .header-info {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      padding: 12px 20px;
+      border-radius: 12px;
+      pointer-events: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .header-info h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .header-info p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .btn-action {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      pointer-events: auto;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .btn-action:hover {
+      background: var(--accent-color);
+      border-color: var(--accent-color);
+      transform: translateY(-2px);
+    }
+
+    /* Side Metadata Panel (Sketchfab Style) */
+    .meta-panel {
+      position: absolute;
+      bottom: 80px;
+      left: 16px;
+      width: 280px;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      z-index: 10;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    .meta-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-color);
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .meta-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    .meta-item span:last-child {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    /* Bottom Control Bar */
+    .toolbar {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border-color);
+      padding: 8px 12px;
+      border-radius: 30px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .tool-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .tool-btn:hover, .tool-btn.active {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .tool-btn.active {
+      color: var(--accent-color);
+    }
+
+    /* Notification Toast */
+    .toast {
+      position: absolute;
+      bottom: 80px;
+      right: 20px;
+      background: var(--accent-color);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Loading Bar */
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255,255,255,0.1);
+      z-index: 30;
+    }
+
+    .update-bar {
+      background: var(--accent-color);
+      width: 0%;
+      height: 100%;
+      transition: width 0.1s ease;
+    }
+
+    @media (max-width: 600px) {
+      .meta-panel { display: none; }
+      .header-info h1 { font-size: 0.95rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewer-container">
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+      <div class="update-bar" id="progress"></div>
+    </div>
+
+    <!-- Header Overlay -->
+    <div class="header">
+      <div class="header-info">
+        <h1 id="modelTitle">WWI Jacket Model Showcase</h1>
+        <p>Interactive 3D Digital Asset</p>
+      </div>
+      <button class="btn-action" id="shareBtn">
+        <span class="material-icons-round">share</span> Share Link
+      </button>
+    </div>
+
+    <!-- 3D Engine -->
+    <model-viewer 
+      id="3dViewer"
+      src="your-model.glb" 
+      alt="3D Asset" 
+      camera-controls 
+      auto-rotate 
+      shadow-intensity="1.5"
+      shadow-softness="0.8"
+      exposure="1.0"
+      environment-image="neutral"
+      ar>
+    </model-viewer>
+
+    <!-- Side Metadata Card -->
+    <div class="meta-panel">
+      <div class="meta-title">Asset Properties</div>
+      <div class="meta-item"><span>Format</span><span>GLTF / GLB</span></div>
+      <div class="meta-item"><span>Textures</span><span>PBR 4K</span></div>
+      <div class="meta-item"><span>Lighting</span><span>HDRI Studio</span></div>
+      <div class="meta-item"><span>Rendering</span><span>WebGL 2.0</span></div>
+    </div>
+
+    <!-- Bottom Controls Toolbar -->
+    <div class="toolbar">
+      <button class="tool-btn active" id="rotateToggle" title="Toggle Auto-Rotate">
+        <span class="material-icons-round">sync</span>
+      </button>
+      <button class="tool-btn" id="lightToggle" title="Toggle Studio Lighting">
+        <span class="material-icons-round">light_mode</span>
+      </button>
+      <button class="tool-btn" id="resetCam" title="Reset Camera View">
+        <span class="material-icons-round">center_focus_strong</span>
+      </button>
+      <button class="tool-btn" id="fullscreenToggle" title="Toggle Fullscreen">
+        <span class="material-icons-round">fullscreen</span>
+      </button>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">Direct link copied to clipboard!</div>
+  </div>
+
+  <script>
+    const viewer = document.querySelector('#3dViewer');
+    const rotateBtn = document.querySelector('#rotateToggle');
+    const lightBtn = document.querySelector('#lightToggle');
+    const resetCamBtn = document.querySelector('#resetCam');
+    const fullscreenBtn = document.querySelector('#fullscreenToggle');
+    const shareBtn = document.querySelector('#shareBtn');
+    const toast = document.querySelector('#toast');
+    const progressBar = document.querySelector('#progress');
+
+    // Load URL parameter dynamically if passed (e.g. ?model=jacket.glb)
+    const urlParams = new URLSearchParams(window.location.search);
+    const modelParam = urlParams.get('model');
+    if (modelParam) {
+      viewer.src = modelParam;
+      document.getElementById('modelTitle').innerText = modelParam.replace('.glb', '').replace('_', ' ').toUpperCase();
+    }
+
+    // Progress Bar Indicator
+    viewer.addEventListener('progress', (e) => {
+      const progress = e.detail.totalProgress * 100;
+      progressBar.style.width = `${progress}%`;
+      if (progress === 100) {
+        setTimeout(() => progressBar.style.width = '0%', 300);
+      }
+    });
+
+    // Auto Rotate Toggle
+    rotateBtn.addEventListener('click', () => {
+      viewer.autoRotate = !viewer.autoRotate;
+      rotateBtn.classList.toggle('active', viewer.autoRotate);
+    });
+
+    // Light Environment Toggle
+    let highLight = false;
+    lightBtn.addEventListener('click', () => {
+      highLight = !highLight;
+      viewer.exposure = highLight ? 2.0 : 1.0;
+      lightBtn.classList.toggle('active', highLight);
+    });
+
+    // Reset Camera
+    resetCamBtn.addEventListener('click', () => {
+      viewer.cameraOrbit = 'auto auto auto';
+      viewer.cameraTarget = 'auto auto auto';
+    });
+
+    // Fullscreen Toggle
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // Copy Direct Link to Clipboard
+    shareBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+      });
+    });
+  </script>
+</body>
+</html>
